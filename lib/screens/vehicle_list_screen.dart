@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import '../models/vehicle.dart';
 import '../theme/app_theme.dart';
@@ -50,9 +52,9 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Remove Vehicle'),
+        title: const Text('Delete Vehicle'),
         content: Text(
-          'Are you sure you want to remove ${vehicle.plateNumber} '
+          'Are you sure you want to delete ${vehicle.plateNumber} '
           '(${vehicle.displayName}) from the mock fleet list?',
         ),
         actions: [
@@ -60,12 +62,14 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
             onPressed: () => Navigator.of(dialogContext).pop(false),
             child: const Text('Cancel'),
           ),
-          FilledButton(
+          FilledButton.icon(
             style: FilledButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.error,
+              backgroundColor: AppColors.danger,
+              foregroundColor: Colors.white,
             ),
             onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('Remove'),
+            icon: const Icon(Icons.delete_outline, size: 18),
+            label: const Text('Delete Vehicle'),
           ),
         ],
       ),
@@ -82,32 +86,31 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(AppSpacing.xl),
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1360),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _buildSummaryRow(),
-              const SizedBox(height: AppSpacing.xl),
-              _buildFilterToolbar(context),
-              const SizedBox(height: AppSpacing.lg),
-              Card(
-                clipBehavior: Clip.antiAlias,
-                child: filtered.isEmpty
-                    ? _buildEmptyState(context)
-                    : LayoutBuilder(
-                        builder: (context, constraints) {
-                          if (constraints.maxWidth >= 820) {
-                            return _buildDesktopTable(context, filtered);
-                          }
-                          return _buildCompactCardList(context, filtered);
-                        },
-                      ),
-              ),
-            ],
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _buildSummaryRow(),
+          const SizedBox(height: AppSpacing.xl),
+          _buildFilterToolbar(context),
+          const SizedBox(height: AppSpacing.lg),
+          Card(
+            clipBehavior: Clip.antiAlias,
+            child: filtered.isEmpty
+                ? _buildEmptyState(context)
+                : LayoutBuilder(
+                    builder: (context, constraints) {
+                      if (constraints.maxWidth >= 820) {
+                        return _buildDesktopTable(
+                          context,
+                          filtered,
+                          constraints.maxWidth,
+                        );
+                      }
+                      return _buildCompactCardList(context, filtered);
+                    },
+                  ),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -134,7 +137,9 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
                 label: 'Total Vehicles',
                 value: '${widget.vehicles.length}',
                 icon: Icons.directions_car_outlined,
-                accentColor: AppColors.primary,
+                accentColor: AppColors.statTotalAccent,
+                backgroundColor: AppColors.statTotalBg,
+                borderColor: AppColors.statTotalBorder,
               ),
             ),
             SizedBox(
@@ -143,7 +148,9 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
                 label: 'Active Fleet',
                 value: '${_countByStatus(VehicleStatus.active)}',
                 icon: Icons.check_circle_outline,
-                accentColor: AppColors.statusActiveAccent,
+                accentColor: AppColors.statActiveAccent,
+                backgroundColor: AppColors.statActiveBg,
+                borderColor: AppColors.statActiveBorder,
               ),
             ),
             SizedBox(
@@ -152,7 +159,9 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
                 label: 'In Maintenance',
                 value: '${_countByStatus(VehicleStatus.maintenance)}',
                 icon: Icons.build_circle_outlined,
-                accentColor: AppColors.statusMaintenanceAccent,
+                accentColor: AppColors.statMaintenanceAccent,
+                backgroundColor: AppColors.statMaintenanceBg,
+                borderColor: AppColors.statMaintenanceBorder,
               ),
             ),
             SizedBox(
@@ -161,7 +170,9 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
                 label: 'Inactive / Standby',
                 value: '${_countByStatus(VehicleStatus.inactive)}',
                 icon: Icons.pause_circle_outline,
-                accentColor: AppColors.statusInactiveAccent,
+                accentColor: AppColors.statInactiveAccent,
+                backgroundColor: AppColors.statInactiveBg,
+                borderColor: AppColors.statInactiveBorder,
               ),
             ),
           ],
@@ -249,90 +260,233 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
   }
 
   Widget _buildRowActions(BuildContext context, Vehicle vehicle) {
+    final compactButtonStyle = OutlinedButton.styleFrom(
+      minimumSize: const Size(0, 36),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.sm,
+      ),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.sm),
+      ),
+      textStyle: Theme.of(context).textTheme.labelMedium?.copyWith(
+        fontSize: 13,
+      ),
+    );
+
+    final deleteButtonStyle = OutlinedButton.styleFrom(
+      foregroundColor: AppColors.danger,
+      backgroundColor: AppColors.dangerSoft,
+      minimumSize: const Size(0, 36),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.sm,
+      ),
+      side: const BorderSide(color: AppColors.dangerBorder),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.sm),
+      ),
+      textStyle: Theme.of(context).textTheme.labelMedium?.copyWith(
+        fontSize: 13,
+      ),
+    );
+
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        IconButton(
-          tooltip: 'Edit Vehicle',
+        OutlinedButton.icon(
+          style: compactButtonStyle,
           onPressed: () => widget.onEditVehicle(vehicle),
           icon: const Icon(
             Icons.edit_outlined,
-            size: 20,
+            size: 16,
             color: AppColors.textSecondary,
           ),
+          label: const Text('Edit'),
         ),
-        IconButton(
-          tooltip: 'Remove Vehicle',
+        const SizedBox(width: AppSpacing.sm),
+        OutlinedButton.icon(
+          style: deleteButtonStyle,
           onPressed: () => _confirmDelete(context, vehicle),
-          icon: Icon(
+          icon: const Icon(
             Icons.delete_outline,
-            size: 20,
-            color: Theme.of(context).colorScheme.error,
+            size: 16,
+            color: AppColors.danger,
           ),
+          label: const Text('Delete'),
         ),
       ],
     );
   }
 
-  Widget _buildDesktopTable(BuildContext context, List<Vehicle> vehicles) {
+  Widget _buildDesktopTable(
+    BuildContext context,
+    List<Vehicle> vehicles,
+    double availableWidth,
+  ) {
     final textTheme = Theme.of(context).textTheme;
+
+    const horizontalMargin = AppSpacing.xl; // 24px left & right
+    const columnSpacing = AppSpacing.lg; // 16px between 7 columns (6 gaps)
+    const minTableWidth = 968.0;
+
+    final tableWidth = math.max(availableWidth, minTableWidth);
+    final extraWidth = math.max(0.0, tableWidth - minTableWidth);
+
+    // Base column widths + proportional share of extra full-screen width.
+    final plateWidth = 96.0 + (extraWidth * 0.12);
+    final vehicleWidth = 148.0 + (extraWidth * 0.22);
+    final typeWidth = 104.0 + (extraWidth * 0.14);
+    final driverWidth = 112.0 + (extraWidth * 0.18);
+    final mileageWidth = 84.0 + (extraWidth * 0.10);
+    final statusWidth = 124.0 + (extraWidth * 0.12);
+    final actionsWidth = 156.0 + (extraWidth * 0.12);
 
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: ConstrainedBox(
-        constraints: const BoxConstraints(minWidth: 820),
+        constraints: BoxConstraints(minWidth: tableWidth),
         child: DataTable(
+          horizontalMargin: horizontalMargin,
+          columnSpacing: columnSpacing,
           dataRowMinHeight: 60,
           dataRowMaxHeight: 68,
-          columnSpacing: AppSpacing.xl,
-          columns: const [
-            DataColumn(label: Text('Plate Number')),
-            DataColumn(label: Text('Vehicle')),
-            DataColumn(label: Text('Type')),
-            DataColumn(label: Text('Assigned Driver')),
-            DataColumn(label: Text('Mileage (km)'), numeric: true),
-            DataColumn(label: Text('Status')),
-            DataColumn(label: Text('Actions')),
+          columns: [
+            DataColumn(
+              label: SizedBox(
+                width: plateWidth,
+                child: const Text('Plate Number'),
+              ),
+            ),
+            DataColumn(
+              label: SizedBox(
+                width: vehicleWidth,
+                child: const Text('Vehicle'),
+              ),
+            ),
+            DataColumn(
+              label: SizedBox(
+                width: typeWidth,
+                child: const Text('Type'),
+              ),
+            ),
+            DataColumn(
+              label: SizedBox(
+                width: driverWidth,
+                child: const Text('Assigned Driver'),
+              ),
+            ),
+            DataColumn(
+              label: SizedBox(
+                width: mileageWidth,
+                child: const Text('Mileage (km)'),
+              ),
+            ),
+            DataColumn(
+              label: SizedBox(
+                width: statusWidth,
+                child: const Text('Status'),
+              ),
+            ),
+            DataColumn(
+              label: SizedBox(
+                width: actionsWidth,
+                child: const Align(
+                  alignment: Alignment.centerRight,
+                  child: Text('Actions'),
+                ),
+              ),
+            ),
           ],
           rows: vehicles.map((vehicle) {
             return DataRow(
               cells: [
-                DataCell(_buildPlateTag(vehicle.plateNumber)),
                 DataCell(
-                  Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '${vehicle.make} ${vehicle.model}',
-                        style: textTheme.titleSmall,
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        'Year ${vehicle.year} • ID ${vehicle.id}',
-                        style: textTheme.bodySmall,
-                      ),
-                    ],
+                  SizedBox(
+                    width: plateWidth,
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: _buildPlateTag(vehicle.plateNumber),
+                    ),
                   ),
                 ),
                 DataCell(
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        vehicle.type.icon,
-                        size: 18,
-                        color: AppColors.textSecondary,
-                      ),
-                      const SizedBox(width: AppSpacing.sm),
-                      Text(vehicle.type.label),
-                    ],
+                  SizedBox(
+                    width: vehicleWidth,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '${vehicle.make} ${vehicle.model}',
+                          style: textTheme.titleSmall,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Year ${vehicle.year} • ID ${vehicle.id}',
+                          style: textTheme.bodySmall,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-                DataCell(Text(vehicle.assignedDriver)),
-                DataCell(Text('${vehicle.mileageKm} km')),
-                DataCell(StatusBadge(status: vehicle.status)),
-                DataCell(_buildRowActions(context, vehicle)),
+                DataCell(
+                  SizedBox(
+                    width: typeWidth,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          vehicle.type.icon,
+                          size: 18,
+                          color: AppColors.textSecondary,
+                        ),
+                        const SizedBox(width: AppSpacing.sm),
+                        Flexible(
+                          child: Text(
+                            vehicle.type.label,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                DataCell(
+                  SizedBox(
+                    width: driverWidth,
+                    child: Text(
+                      vehicle.assignedDriver,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ),
+                DataCell(
+                  SizedBox(
+                    width: mileageWidth,
+                    child: Text('${vehicle.mileageKm} km'),
+                  ),
+                ),
+                DataCell(
+                  SizedBox(
+                    width: statusWidth,
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: StatusBadge(status: vehicle.status),
+                    ),
+                  ),
+                ),
+                DataCell(
+                  SizedBox(
+                    width: actionsWidth,
+                    child: Align(
+                      alignment: Alignment.centerRight,
+                      child: _buildRowActions(context, vehicle),
+                    ),
+                  ),
+                ),
               ],
             );
           }).toList(),

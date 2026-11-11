@@ -36,7 +36,26 @@ class AppColors {
   static const Color statusInactiveBg = Color(0xFFF1F5F9);
   static const Color statusInactiveFg = Color(0xFF475569);
 
+  // Summary Stat Card Palettes (4 distinct colors)
+  static const Color statTotalAccent = Color(0xFF0F52BA);
+  static const Color statTotalBg = Color(0xFFEFF6FF);
+  static const Color statTotalBorder = Color(0xFFBFDBFE);
+
+  static const Color statActiveAccent = Color(0xFF16A34A);
+  static const Color statActiveBg = Color(0xFFECFDF5);
+  static const Color statActiveBorder = Color(0xFFA7F3D0);
+
+  static const Color statMaintenanceAccent = Color(0xFFD97706);
+  static const Color statMaintenanceBg = Color(0xFFFFFBEB);
+  static const Color statMaintenanceBorder = Color(0xFFFDE68A);
+
+  static const Color statInactiveAccent = Color(0xFF7C3AED);
+  static const Color statInactiveBg = Color(0xFFF5F3FF);
+  static const Color statInactiveBorder = Color(0xFFDDD6FE);
+
   static const Color danger = Color(0xFFDC2626);
+  static const Color dangerSoft = Color(0xFFFEF2F2);
+  static const Color dangerBorder = Color(0xFFFECACA);
 }
 
 /// Consistent 4pt/8pt spatial scale used across all screens and widgets.

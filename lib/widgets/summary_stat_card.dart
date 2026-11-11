@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 
-/// A reusable metric card for fleet summary statistics.
+/// A reusable metric card for fleet summary statistics with distinct color styling.
 class SummaryStatCard extends StatelessWidget {
   const SummaryStatCard({
     super.key,
@@ -9,18 +9,27 @@ class SummaryStatCard extends StatelessWidget {
     required this.value,
     required this.icon,
     required this.accentColor,
+    required this.backgroundColor,
+    required this.borderColor,
   });
 
   final String label;
   final String value;
   final IconData icon;
   final Color accentColor;
+  final Color backgroundColor;
+  final Color borderColor;
 
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
 
     return Card(
+      color: backgroundColor,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        side: BorderSide(color: borderColor, width: 1.5),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.xl),
         child: Row(
@@ -29,10 +38,10 @@ class SummaryStatCard extends StatelessWidget {
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                color: accentColor.withValues(alpha: 0.12),
+                color: accentColor,
                 borderRadius: BorderRadius.circular(AppRadius.lg),
               ),
-              child: Icon(icon, color: accentColor, size: 24),
+              child: Icon(icon, color: Colors.white, size: 24),
             ),
             const SizedBox(width: AppSpacing.lg),
             Expanded(
@@ -43,14 +52,16 @@ class SummaryStatCard extends StatelessWidget {
                   Text(
                     label,
                     style: textTheme.bodySmall?.copyWith(
-                      fontWeight: FontWeight.w500,
-                      color: AppColors.textMuted,
+                      fontWeight: FontWeight.w600,
+                      color: accentColor,
                     ),
                   ),
                   const SizedBox(height: AppSpacing.xs),
                   Text(
                     value,
-                    style: textTheme.headlineSmall,
+                    style: textTheme.headlineSmall?.copyWith(
+                      color: AppColors.textPrimary,
+                    ),
                   ),
                 ],
               ),
